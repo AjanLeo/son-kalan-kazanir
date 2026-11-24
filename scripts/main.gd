@@ -5,6 +5,9 @@ const PLAYER_SPEED := 10.0
 const GRAVITY := 24.0
 var player: CharacterBody3D
 var follow_camera: Camera3D
+var world_env: WorldEnvironment
+var sun_light: DirectionalLight3D
+var graphics_level := 2
 var sfx_player: AudioStreamPlayer
 var camera_yaw := 0.0
 var camera_drag_active := false
@@ -66,6 +69,7 @@ func _build_world() -> void:
 	follow_camera.fov = 72.0
 	add_child(follow_camera)
 	var env := WorldEnvironment.new()
+	world_env = env
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	environment.sky = Sky.new()
@@ -79,9 +83,10 @@ func _build_world() -> void:
 	env.environment = environment
 	add_child(env)
 	var sun := DirectionalLight3D.new()
+	sun_light = sun
 	sun.rotation_degrees = Vector3(-48, -28, 0)
-	sun.light_energy = 1.25
-	sun.shadow_enabled = true
+	sun.light_energy = [0.8, 1.0, 1.25][graphics_level]
+	sun.shadow_enabled = graphics_level >= 2
 	add_child(sun)
 	_make_box("Track", Vector3(16, 0.5, TRACK_LENGTH + 12), Vector3(0, -0.35, -TRACK_LENGTH / 2), theme_floor[theme_index])
 	_make_box("Left rail", Vector3(0.5, 1.5, TRACK_LENGTH + 8), Vector3(-8.1, 0.35, -TRACK_LENGTH / 2), theme_glow[theme_index])
@@ -693,7 +698,19 @@ func _claim_quest() -> void:
 	_show_submenu("GÖREV TAMAMLANDI!\n\nYeni bakiyen: %d ALTIN" % coins)
 
 func _open_settings() -> void:
-	_show_submenu("AYARLAR VE KONTROLLER\n\nEKRAN: YATAY 16:9\nSOL ALT: JOYSTICK\nSAĞ TARAF: KAMERA\nSAĞ ALT: ZIPLA / DAL\n\nGRAFİK: 3D MOBİL DENGELİ\nTOPLAM GALİBİYET: %d" % total_wins)
+	var levels := ["DÜŞÜK", "ORTA", "YÜKSEK"]
+	_show_submenu("AYARLAR VE KONTROLLER\n\nEKRAN: YATAY 16:9\nSOL ALT: JOYSTICK\nSAĞ TARAF: KAMERA\nSAĞ ALT: ZIPLA / DAL\n\nGRAFİK KALİTESİ: %s\nTOPLAM GALİBİYET: %d" % [levels[graphics_level], total_wins])
+	_add_submenu_action("GRAFİK KALİTESİNİ DEĞİŞTİR", _cycle_graphics)
+
+func _cycle_graphics() -> void:
+	graphics_level = (graphics_level + 1) % 3
+	if sun_light:
+		sun_light.shadow_enabled = graphics_level >= 2
+		sun_light.light_energy = [0.8, 1.0, 1.25][graphics_level]
+	if world_env and world_env.environment:
+		world_env.environment.ambient_light_energy = [0.55, 0.72, 0.9][graphics_level]
+	_save_game()
+	_open_settings()
 func _back_to_menu() -> void:
 	for child in menu_actions.get_children():
 		child.queue_free()
@@ -768,7 +785,7 @@ func _play_sfx(frequency: float, duration: float, volume: float) -> void:
 func _save_game() -> void:
 	var f := FileAccess.open("user://savegame.json", FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify({"coins": coins, "wins": total_wins, "races": total_races, "best_rank": best_rank, "theme": theme_index, "skin": skin_index, "unlocked": unlocked_skins, "quest_claimed": quest_claimed}))
+		f.store_string(JSON.stringify({"coins": coins, "wins": total_wins, "races": total_races, "best_rank": best_rank, "theme": theme_index, "skin": skin_index, "unlocked": unlocked_skins, "quest_claimed": quest_claimed, "graphics": graphics_level}))
 
 func _load_save() -> void:
 	if not FileAccess.file_exists("user://savegame.json"):
@@ -791,3 +808,4 @@ func _load_save() -> void:
 					if idx >= 0 and idx < 8 and not unlocked_skins.has(idx): unlocked_skins.append(idx)
 			if not unlocked_skins.has(0): unlocked_skins.append(0)
 			quest_claimed = bool(parsed.get("quest_claimed", false))
+			graphics_level = clampi(int(parsed.get("graphics", 2)), 0, 2)
