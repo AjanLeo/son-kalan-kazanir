@@ -5,6 +5,7 @@ const PLAYER_SPEED := 10.0
 const GRAVITY := 24.0
 var player: CharacterBody3D
 var follow_camera: Camera3D
+var sfx_player: AudioStreamPlayer
 var camera_yaw := 0.0
 var camera_drag_active := false
 var camera_last_touch := Vector2.ZERO
@@ -47,6 +48,8 @@ var touch_active := false
 var touch_id := -1
 
 func _ready() -> void:
+	sfx_player = AudioStreamPlayer.new()
+	add_child(sfx_player)
 	_load_save()
 	_build_world()
 	_build_racers()
@@ -394,6 +397,7 @@ func _show_intro() -> void:
 	menu_actions.visible = true
 func _request_jump() -> void:
 	jump_requested = true
+	_play_sfx(620.0, 0.11, 0.16)
 
 func _start_round() -> void:
 	jump_requested = false
@@ -458,6 +462,7 @@ func _update_player(delta: float) -> void:
 		coyote_time = 0.0
 	if dive_requested:
 		player.velocity.y = -7.0
+		_play_sfx(180.0, 0.09, 0.12)
 	jump_requested = false
 	dive_requested = false
 	player.velocity.y -= GRAVITY * delta
@@ -527,11 +532,13 @@ func _finish_round(place: int) -> void:
 		coins += 100 if round_number == 3 else 35
 		if round_number == 3:
 			total_wins += 1
+			_play_sfx(880.0, 0.34, 0.2)
 			for data in bots:
 				(data.node as CharacterBody3D).visible = true
 		result_label.text = "ŞAMPİYON OLDUN!\nSıralama: %d\n+%d ALTIN" % [place, 100 if round_number == 3 else 35]
 		round_number = 1 if round_number == 3 else round_number + 1
 	else:
+		_play_sfx(140.0, 0.35, 0.18)
 		for data in bots:
 			(data.node as CharacterBody3D).visible = true
 		result_label.text = "ELENDİN!\nSıralama: %d\nTekrar dene!" % place
@@ -676,6 +683,23 @@ func _input(event: InputEvent) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_save_game()
+
+func _play_sfx(frequency: float, duration: float, volume: float) -> void:
+	var sample_rate := 22050
+	var sample_count := int(sample_rate * duration)
+	var samples := PackedByteArray()
+	samples.resize(sample_count * 2)
+	for i in range(sample_count):
+		var envelope := 1.0 - float(i) / float(sample_count)
+		var value := sin(TAU * frequency * float(i) / float(sample_rate)) * envelope * volume
+		samples.encode_s16(i * 2, int(value * 32767.0))
+	var stream := AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = sample_rate
+	stream.stereo = false
+	stream.data = samples
+	sfx_player.stream = stream
+	sfx_player.play()
 
 func _save_game() -> void:
 	var f := FileAccess.open("user://savegame.json", FileAccess.WRITE)
