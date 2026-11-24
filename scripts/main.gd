@@ -348,7 +348,7 @@ func _build_hud() -> void:
 	dive.add_theme_font_size_override("font_size", 21)
 	dive.add_theme_stylebox_override("normal", _button_style(Color(0.58, 0.2, 0.42)))
 	dive.add_theme_stylebox_override("hover", _button_style(Color(0.78, 0.28, 0.55)))
-	dive.pressed.connect(func(): dive_requested = true; _play_sfx(180.0, 0.09, 0.12))
+	dive.pressed.connect(_request_dive)
 	hud.add_child(dive)
 	dive_button = dive
 	result_panel = PanelContainer.new()
@@ -448,6 +448,10 @@ func _show_intro() -> void:
 func _request_jump() -> void:
 	jump_requested = true
 	_play_sfx(620.0, 0.11, 0.16)
+
+func _request_dive() -> void:
+	dive_requested = true
+	_play_sfx(180.0, 0.09, 0.12)
 
 func _start_round() -> void:
 	jump_requested = false
