@@ -18,6 +18,16 @@ var round_active := false
 var race_time := 0.0
 var coins := 0
 var total_wins := 0
+var total_races := 0
+var best_rank := 20
+var theme_index := 0
+var skin_index := 0
+var unlocked_skins: Array[int] = [0]
+var quest_claimed := false
+var skin_colors: Array[Color] = [Color(0.1,0.85,1.0), Color(1.0,0.25,0.42), Color(0.45,0.95,0.35), Color(1.0,0.72,0.15), Color(0.65,0.42,1.0), Color(1.0,0.45,0.12), Color(0.95,0.95,1.0), Color(0.12,0.95,0.75)]
+var theme_names: Array[String] = ["NEON ŞEHİR", "LAV DENİZİ", "BUZ KRALLIĞI", "GÖKYÜZÜ", "ŞEKER DÜNYASI", "UZAY ÜSSÜ", "ORMAN TAPINAĞI", "ŞAMPİYON ARENASI"]
+var theme_floor: Array[Color] = [Color(0.12,0.19,0.31), Color(0.32,0.09,0.07), Color(0.55,0.78,0.91), Color(0.25,0.42,0.68), Color(0.75,0.35,0.58), Color(0.10,0.12,0.25), Color(0.12,0.28,0.19), Color(0.28,0.19,0.42)]
+var theme_glow: Array[Color] = [Color(0.05,0.9,1.0), Color(1.0,0.22,0.05), Color(0.6,0.92,1.0), Color(1.0,0.85,0.35), Color(1.0,0.35,0.72), Color(0.48,0.38,1.0), Color(0.3,1.0,0.52), Color(1.0,0.78,0.18)]
 var joystick := Vector2.ZERO
 var jump_requested := false
 var jump_buffer := 0.0
@@ -68,9 +78,9 @@ func _build_world() -> void:
 	sun.light_energy = 1.25
 	sun.shadow_enabled = true
 	add_child(sun)
-	_make_box("Track", Vector3(16, 0.5, TRACK_LENGTH + 12), Vector3(0, -0.35, -TRACK_LENGTH / 2), Color(0.16, 0.25, 0.36))
-	_make_box("Left rail", Vector3(0.5, 1.5, TRACK_LENGTH + 8), Vector3(-8.1, 0.35, -TRACK_LENGTH / 2), Color(0.08, 0.72, 0.88))
-	_make_box("Right rail", Vector3(0.5, 1.5, TRACK_LENGTH + 8), Vector3(8.1, 0.35, -TRACK_LENGTH / 2), Color(0.95, 0.34, 0.42))
+	_make_box("Track", Vector3(16, 0.5, TRACK_LENGTH + 12), Vector3(0, -0.35, -TRACK_LENGTH / 2), theme_floor[theme_index])
+	_make_box("Left rail", Vector3(0.5, 1.5, TRACK_LENGTH + 8), Vector3(-8.1, 0.35, -TRACK_LENGTH / 2), theme_glow[theme_index])
+	_make_box("Right rail", Vector3(0.5, 1.5, TRACK_LENGTH + 8), Vector3(8.1, 0.35, -TRACK_LENGTH / 2), theme_glow[theme_index].lerp(Color.WHITE, 0.22))
 	for i in range(22):
 		_make_box("Track stripe", Vector3(15.5, 0.035, 0.18), Vector3(0, -0.07, -float(i) * 10.0 - 5.0), Color(0.36, 0.48, 0.62))
 	_make_box("Finish line", Vector3(16, 0.16, 1.6), Vector3(0, 0.12, -TRACK_LENGTH), Color(1.0, 0.82, 0.16))
@@ -230,7 +240,7 @@ func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody
 	return body
 
 func _build_racers() -> void:
-	player = _create_racer(Color(0.1, 0.85, 1.0), Vector3(0, 1, 3), true)
+	player = _create_racer(skin_colors[skin_index], Vector3(0, 1, 3), true)
 	racers.append(player)
 	for i in range(19):
 		var x := -6.0 + float(i % 7) * 2.0
@@ -285,6 +295,8 @@ func _build_hud() -> void:
 	_add_menu_button("KARAKTER", _open_characters)
 	_add_menu_button("MAĞAZA", _open_shop)
 	_add_menu_button("AYARLAR", _open_settings)
+	_add_menu_button("HARİTA", _open_maps)
+	_add_menu_button("GÖREVLER", _open_quests)
 	start_button = Button.new()
 	start_button.text = "YARIŞA BAŞLA"
 	start_button.custom_minimum_size = Vector2(260, 58)
@@ -320,10 +332,13 @@ func _label(value: String, size: int) -> Label:
 
 func _show_intro() -> void:
 	result_panel.visible = true
-	result_label.text = "SON KALAN KAZANIR\n20 YARIŞMACI  •  3 TUR\n\nİlk 10, ardından ilk 5 ve finalde şampiyon!"
+	result_label.text = "SON KALAN KAZANIR\n20 YARIŞMACI  •  3 ELEME TURU\n\nİlk 10, ardından ilk 5 ve finalde şampiyon!\nHARİTA: %s  •  KOSTÜM: %d" % [theme_names[theme_index], skin_index + 1]
 	start_button.text = "YARIŞA BAŞLA"
+	if start_button.pressed.is_connected(_back_to_menu):
+		start_button.pressed.disconnect(_back_to_menu)
+	if not start_button.pressed.is_connected(_start_round):
+		start_button.pressed.connect(_start_round)
 	menu_actions.visible = true
-
 func _request_jump() -> void:
 	jump_requested = true
 
@@ -431,6 +446,8 @@ func _player_rank() -> int:
 	return rank
 
 func _finish_round(place: int) -> void:
+	total_races += 1
+	best_rank = mini(best_rank, place)
 	var qualified := (round_number == 1 and place <= 10) or (round_number == 2 and place <= 5) or (round_number == 3 and place == 1)
 	if qualified:
 		coins += 100 if round_number == 3 else 35
@@ -449,31 +466,95 @@ func _finish_round(place: int) -> void:
 	start_button.text = "YENİDEN OYNA" if round_number == 1 else "SONRAKİ TUR"
 
 func _open_characters() -> void:
-	result_label.text = "YARIŞÇI KADROSU\n\n20 farklı renk ve yüz ifadesine sahip yarışçı sahada.\nSenin karakterin: NEON MAVİ\n\nEngelleri aş, rakiplerini geride bırak!")
+	var state := "AÇIK" if unlocked_skins.has(skin_index) else "KİLİTLİ"
+	_show_submenu("KARAKTER SEÇİMİ\n\nKostüm %d / 8\nDurum: %s\n\nAçık kostümler arasında seçim yap." % [skin_index + 1, state])
+	_add_submenu_action("SONRAKİ KARAKTER", _next_skin)
+
+func _next_skin() -> void:
+	for i in range(1, skin_colors.size() + 1):
+		var candidate := (skin_index + i) % skin_colors.size()
+		if unlocked_skins.has(candidate):
+			skin_index = candidate
+			break
+	player.queue_free()
+	racers.erase(player)
+	player = _create_racer(skin_colors[skin_index], Vector3(0, 1, 3), true)
+	racers.push_front(player)
+	_open_characters()
+
+func _show_submenu(message: String) -> void:
+	result_label.text = message
 	start_button.text = "GERİ DÖN"
-	start_button.pressed.disconnect(_start_round)
-	start_button.pressed.connect(_back_to_menu)
+	if start_button.pressed.is_connected(_start_round):
+		start_button.pressed.disconnect(_start_round)
+	if not start_button.pressed.is_connected(_back_to_menu):
+		start_button.pressed.connect(_back_to_menu)
 	menu_actions.visible = false
 
+func _add_submenu_action(caption: String, callback: Callable) -> void:
+	var button := Button.new()
+	button.text = caption
+	button.custom_minimum_size = Vector2(220, 48)
+	button.pressed.connect(callback)
+	menu_actions.add_child(button)
+	menu_actions.visible = true
 func _open_shop() -> void:
-	result_label.text = "ALTIN\n\nBakiyen: %d ALTIN\n\nBu sürümde altınlar yarış ödülü olarak birikir.\nKostüm satın alma henüz etkin değil." % coins
-	start_button.text = "GERİ DÖN"
-	start_button.pressed.disconnect(_start_round)
-	start_button.pressed.connect(_back_to_menu)
-	menu_actions.visible = false
+	_show_submenu("KOSTÜM MAĞAZASI\n\nBakiyen: %d ALTIN\nKilitli kostümler 75 ALTIN.\nAçık kostümler kalıcı olarak kaydedilir." % coins)
+	_add_submenu_action("KOSTÜM SATIN AL", _buy_skin)
+
+func _buy_skin() -> void:
+	var next_locked := -1
+	for i in range(skin_colors.size()):
+		if not unlocked_skins.has(i):
+			next_locked = i
+			break
+	if next_locked == -1:
+		_show_submenu("Bütün kostümler açık!")
+	elif coins >= 75:
+		coins -= 75
+		unlocked_skins.append(next_locked)
+		skin_index = next_locked
+		_save_game()
+		_show_submenu("YENİ KOSTÜM AÇILDI!\n\nKostüm %d artık senin.\nKalan altın: %d" % [next_locked + 1, coins])
+	else:
+		_show_submenu("YETERSİZ ALTIN\n\nBu kostüm 75 altın.\nBakiyen: %d" % coins)
+	_add_submenu_action("MAĞAZAYA DÖN", _open_shop)
+func _open_maps() -> void:
+	_show_submenu("HARİTA SEÇİMİ\n\n%s\nHarita %d / 8\n\nHer haritada farklı renk paleti ve engel dizilimi bulunur." % [theme_names[theme_index], theme_index + 1])
+	_add_submenu_action("SONRAKİ HARİTA", _next_map)
+
+func _next_map() -> void:
+	theme_index = (theme_index + 1) % theme_names.size()
+	_save_game()
+	get_tree().reload_current_scene()
+
+func _open_quests() -> void:
+	_show_submenu("GÜNLÜK GÖREV\n\n3 yarış tamamla: %d / 3\nToplam yarış: %d\nEn iyi derece: %d\n\nÖdül: 100 ALTIN" % [mini(total_races, 3), total_races, best_rank])
+	if total_races >= 3 and not quest_claimed:
+		_add_submenu_action("100 ALTIN ÖDÜLÜNÜ AL", _claim_quest)
+
+func _claim_quest() -> void:
+	if total_races >= 3 and not quest_claimed:
+		coins += 100
+		quest_claimed = true
+		_save_game()
+	_show_submenu("GÖREV TAMAMLANDI!\n\nYeni bakiyen: %d ALTIN" % coins)
 
 func _open_settings() -> void:
-	result_label.text = "KONTROLLER\n\nSOL ALT: JOYSTICK İLE HAREKET\nSAĞ TARAF: KAMERAYI ÇEVİR\nSAĞ ALT: ZIPLA / DAL\n\nYATAY EKRAN • 3D PARKUR")
-	start_button.text = "GERİ DÖN"
-	start_button.pressed.disconnect(_start_round)
-	start_button.pressed.connect(_back_to_menu)
-	menu_actions.visible = false
-
+	_show_submenu("AYARLAR VE KONTROLLER\n\nEKRAN: YATAY 16:9\nSOL ALT: JOYSTICK\nSAĞ TARAF: KAMERA\nSAĞ ALT: ZIPLA / DAL\n\nGRAFİK: 3D MOBİL DENGELİ\nTOPLAM GALİBİYET: %d" % total_wins)
 func _back_to_menu() -> void:
-	start_button.pressed.disconnect(_back_to_menu)
-	start_button.pressed.connect(_start_round)
+	for child in menu_actions.get_children():
+		child.queue_free()
+	if start_button.pressed.is_connected(_back_to_menu):
+		start_button.pressed.disconnect(_back_to_menu)
+	if not start_button.pressed.is_connected(_start_round):
+		start_button.pressed.connect(_start_round)
+	_add_menu_button("KARAKTER", _open_characters)
+	_add_menu_button("MAĞAZA", _open_shop)
+	_add_menu_button("HARİTA", _open_maps)
+	_add_menu_button("GÖREVLER", _open_quests)
+	_add_menu_button("AYARLAR", _open_settings)
 	_show_intro()
-
 func _update_hud() -> void:
 	var alive := 0
 	for r in racers:
@@ -518,7 +599,7 @@ func _notification(what: int) -> void:
 func _save_game() -> void:
 	var f := FileAccess.open("user://savegame.json", FileAccess.WRITE)
 	if f:
-		f.store_string(JSON.stringify({"coins": coins, "wins": total_wins}))
+		f.store_string(JSON.stringify({"coins": coins, "wins": total_wins, "races": total_races, "best_rank": best_rank, "theme": theme_index, "skin": skin_index, "unlocked": unlocked_skins, "quest_claimed": quest_claimed}))
 
 func _load_save() -> void:
 	if not FileAccess.file_exists("user://savegame.json"):
@@ -529,3 +610,15 @@ func _load_save() -> void:
 		if parsed is Dictionary:
 			coins = int(parsed.get("coins", 0))
 			total_wins = int(parsed.get("wins", 0))
+			total_races = int(parsed.get("races", 0))
+			best_rank = int(parsed.get("best_rank", 20))
+			theme_index = clampi(int(parsed.get("theme", 0)), 0, 7)
+			skin_index = clampi(int(parsed.get("skin", 0)), 0, 7)
+			var saved_unlocked = parsed.get("unlocked", [0])
+			if saved_unlocked is Array:
+				unlocked_skins.clear()
+				for item in saved_unlocked:
+					var idx := int(item)
+					if idx >= 0 and idx < 8 and not unlocked_skins.has(idx): unlocked_skins.append(idx)
+			if not unlocked_skins.has(0): unlocked_skins.append(0)
+			quest_claimed = bool(parsed.get("quest_claimed", false))
