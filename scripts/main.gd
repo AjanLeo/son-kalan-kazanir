@@ -266,6 +266,14 @@ func _build_hud() -> void:
 	joystick_knob.modulate = Color(1, 1, 1, 0.85)
 	hud.add_child(joystick_knob)
 
+func _add_menu_button(caption: String, callback: Callable) -> void:
+	var button := Button.new()
+	button.text = caption
+	button.custom_minimum_size = Vector2(150, 48)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	button.pressed.connect(callback)
+	menu_actions.add_child(button)
+
 func _label(value: String, size: int) -> Label:
 	var label := Label.new()
 	label.text = value
