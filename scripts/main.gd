@@ -364,9 +364,11 @@ func _start_round() -> void:
 	round_active = true
 	race_time = 0.0
 	for r in racers:
+		if not r.visible:
+			continue
 		r.set_meta("finished", false)
 		r.velocity = Vector3.ZERO
-		r.position = Vector3(randf_range(-4.5, 4.5), 1, randf_range(2, 8))
+		r.position = Vector3(randf_range(-6.0, 6.0), 1, randf_range(2, 8))
 	if player:
 		player.position = Vector3(0, 1, 3)
 
@@ -428,7 +430,7 @@ func _update_player(delta: float) -> void:
 func _update_racers(delta: float) -> void:
 	for data in bots:
 		var bot: CharacterBody3D = data.node
-		if bot.get_meta("finished", false):
+		if not bot.visible or bot.get_meta("finished", false):
 			continue
 		var phase: float = data.phase
 		var speed := PLAYER_SPEED * float(bot.get_meta("speed_factor"))
@@ -457,21 +459,36 @@ func _check_player_finish() -> void:
 func _player_rank() -> int:
 	var rank := 1
 	for r in racers:
-		if r != player and r.position.z < player.position.z:
+		if r != player and r.visible and r.position.z < player.position.z:
 			rank += 1
 	return rank
+
+func _retain_qualifiers(bot_count: int) -> void:
+	var candidates: Array[CharacterBody3D] = []
+	for data in bots:
+		var bot: CharacterBody3D = data.node
+		candidates.append(bot)
+	candidates.sort_custom(func(a: CharacterBody3D, b: CharacterBody3D) -> bool: return a.position.z < b.position.z)
+	for i in range(candidates.size()):
+		candidates[i].visible = i < bot_count
 
 func _finish_round(place: int) -> void:
 	total_races += 1
 	best_rank = mini(best_rank, place)
 	var qualified := (round_number == 1 and place <= 10) or (round_number == 2 and place <= 5) or (round_number == 3 and place == 1)
 	if qualified:
+		if round_number == 1:
+			_retain_qualifiers(9)
+		elif round_number == 2:
+			_retain_qualifiers(4)
 		coins += 100 if round_number == 3 else 35
 		if round_number == 3:
 			total_wins += 1
 		result_label.text = "ŞAMPİYON OLDUN!\nSıralama: %d\n+%d ALTIN" % [place, 100 if round_number == 3 else 35]
 		round_number = 1 if round_number == 3 else round_number + 1
 	else:
+		for data in bots:
+			(data.node as CharacterBody3D).visible = true
 		result_label.text = "ELENDİN!\nSıralama: %d\nTekrar dene!" % place
 		round_number = 1
 	_save_game()
@@ -531,7 +548,7 @@ func _buy_skin() -> void:
 		unlocked_skins.append(next_locked)
 		skin_index = next_locked
 		_save_game()
-		_show_submenu("YENİ KOSTÜM AÇILDI!\n\nKostüm %d artık senin.\nKalan altın: %d" % [next_locked + 1, coins])
+		get_tree().reload_current_scene()
 	else:
 		_show_submenu("YETERSİZ ALTIN\n\nBu kostüm 75 altın.\nBakiyen: %d" % coins)
 	_add_submenu_action("MAĞAZAYA DÖN", _open_shop)
@@ -545,7 +562,7 @@ func _next_map() -> void:
 	get_tree().reload_current_scene()
 
 func _open_quests() -> void:
-	_show_submenu("GÜNLÜK GÖREV\n\n3 yarış tamamla: %d / 3\nToplam yarış: %d\nEn iyi derece: %d\n\nÖdül: 100 ALTIN" % [mini(total_races, 3), total_races, best_rank])
+	_show_submenu("3 YARIŞ GÖREVİ\n\n3 yarış tamamla: %d / 3\nToplam yarış: %d\nEn iyi derece: %d\n\nÖdül: 100 ALTIN" % [mini(total_races, 3), total_races, best_rank])
 	if total_races >= 3 and not quest_claimed:
 		_add_submenu_action("100 ALTIN ÖDÜLÜNÜ AL", _claim_quest)
 
@@ -574,7 +591,7 @@ func _back_to_menu() -> void:
 func _update_hud() -> void:
 	var alive := 0
 	for r in racers:
-		if not r.get_meta("finished", false):
+		if r.visible and not r.get_meta("finished", false):
 			alive += 1
 	count_label.text = "%d YARIŞMACI" % alive
 	progress_label.text = "İLERLEME %d%%" % int(clampf((-player.position.z / TRACK_LENGTH) * 100.0, 0, 100))
