@@ -2,21 +2,41 @@ name: Build Android APK
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "master" ]
+permissions:
+  contents: read
+  actions: read
 jobs:
   build:
-    runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.3.0
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - name: Export Android debug APK
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Godot 4.3
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-mono: false
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+          wget -q https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz -O /tmp/templates.tpz
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          cp /tmp/godot-templates/templates/* ~/.local/share/godot/export_templates/4.3.stable/
+      - name: Configure Android SDK paths
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+      - name: Import project and export APK
         run: |
           mkdir -p build
           godot --headless --editor --path . --quit
           godot --headless --path . --export-debug Android build/SON_KALAN_KAZANIR.apk
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          name: Son-Kalan-Kazanir-Android-APK
+          name: SON-KALAN-KAZANIR-APK
           path: build/SON_KALAN_KAZANIR.apk
           if-no-files-found: error
