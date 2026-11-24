@@ -171,25 +171,25 @@ func _make_theme_landmarks() -> void:
 			material.emission = theme_glow[theme_index] * 0.2
 			match theme_index:
 				0, 7:
-					var shape := BoxMesh.new()
-					shape.size = Vector3(1.1, 3.2 + float(i % 3), 1.1)
-					landmark.mesh = shape
+					var box_shape := BoxMesh.new()
+					box_shape.size = Vector3(1.1, 3.2 + float(i % 3), 1.1)
+					landmark.mesh = box_shape
 				1, 4, 6:
-					var shape := CylinderMesh.new()
-					shape.top_radius = 0.18 if theme_index == 1 else 0.55
-					shape.bottom_radius = 0.85
-					shape.height = 3.4
-					landmark.mesh = shape
+					var cylinder_shape := CylinderMesh.new()
+					cylinder_shape.top_radius = 0.18 if theme_index == 1 else 0.55
+					cylinder_shape.bottom_radius = 0.85
+					cylinder_shape.height = 3.4
+					landmark.mesh = cylinder_shape
 				2:
-					var shape := CapsuleMesh.new()
-					shape.radius = 0.62
-					shape.height = 3.0
-					landmark.mesh = shape
+					var capsule_shape := CapsuleMesh.new()
+					capsule_shape.radius = 0.62
+					capsule_shape.height = 3.0
+					landmark.mesh = capsule_shape
 				3, 5:
-					var shape := SphereMesh.new()
-					shape.radius = 1.05
-					shape.height = 1.8
-					landmark.mesh = shape
+					var sphere_shape := SphereMesh.new()
+					sphere_shape.radius = 1.05
+					sphere_shape.height = 1.8
+					landmark.mesh = sphere_shape
 			landmark.material_override = material
 			landmark.position = Vector3(side * (10.8 + float(i % 2) * 0.8), 1.6, -float(i) * 12.0 - 5.0)
 			landmark.rotation_degrees.y = float(i * 23)
