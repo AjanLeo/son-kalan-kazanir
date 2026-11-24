@@ -370,14 +370,14 @@ func _open_shop() -> void:
 	result_label.text = "ALTIN MAĞAZASI\n\nBakiyen: %d ALTIN\nKostüm ve görsel efekt mağazası sıradaki geliştirme aşamasında." % coins
 	start_button.text = "GERİ DÖN"
 	start_button.pressed.disconnect(_start_round)
-	start_button.pressed.connect(_back_to_menu, CONNECT_ONE_SHOT)
+	start_button.pressed.connect(_back_to_menu)
 	menu_actions.visible = false
 
 func _open_settings() -> void:
 	result_label.text = "AYARLAR\n\nEKRAN: YATAY 16:9\nKAMERA: SAĞ TARAFTA SÜRÜKLE\nGRAFİK: MOBİL DENGELİ"
 	start_button.text = "GERİ DÖN"
 	start_button.pressed.disconnect(_start_round)
-	start_button.pressed.connect(_back_to_menu, CONNECT_ONE_SHOT)
+	start_button.pressed.connect(_back_to_menu)
 	menu_actions.visible = false
 
 func _back_to_menu() -> void:
