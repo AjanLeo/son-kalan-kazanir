@@ -380,6 +380,9 @@ func _build_hud() -> void:
 	start_button = Button.new()
 	start_button.text = "YARIŞA BAŞLA"
 	start_button.custom_minimum_size = Vector2(260, 58)
+	start_button.add_theme_font_size_override("font_size", 23)
+	start_button.add_theme_stylebox_override("normal", _button_style(Color(0.04, 0.52, 0.72)))
+	start_button.add_theme_stylebox_override("hover", _button_style(Color(0.06, 0.7, 0.88)))
 	start_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	start_button.pressed.connect(_start_round)
 	box.add_child(start_button)
@@ -622,6 +625,8 @@ func _add_submenu_action(caption: String, callback: Callable) -> void:
 	var button := Button.new()
 	button.text = caption
 	button.custom_minimum_size = Vector2(220, 48)
+	button.add_theme_stylebox_override("normal", _button_style(theme_glow[theme_index].darkened(0.25)))
+	button.add_theme_stylebox_override("hover", _button_style(theme_glow[theme_index]))
 	button.pressed.connect(callback)
 	menu_actions.add_child(button)
 	menu_actions.visible = true
@@ -701,7 +706,7 @@ func _input(event: InputEvent) -> void:
 				touch_active = true
 				touch_id = event.index
 				touch_origin = event.position
-			elif event.position.x >= size.x * 0.48 and event.position.y > size.y * 0.20:
+			elif event.position.x >= size.x * 0.48 and event.position.y > size.y * 0.20 and not (event.position.x > size.x * 0.65 and event.position.y > size.y * 0.72):
 				camera_drag_active = true
 				camera_last_touch = event.position
 		else:
