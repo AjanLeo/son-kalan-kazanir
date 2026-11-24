@@ -305,13 +305,13 @@ func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody
 	return body
 
 func _build_racers() -> void:
-	player = _create_racer(skin_colors[skin_index], Vector3(0, 1, 3), true)
+	player = _create_racer(skin_colors[skin_index], Vector3(0, -0.15, 3), true)
 	racers.append(player)
 	for i in range(19):
 		var x := -6.0 + float(i % 7) * 2.0
 		var z := 5.0 + float(i / 7) * 2.0
 		var hue := float(i) / 19.0
-		var bot := _create_racer(Color.from_hsv(hue, 0.72, 0.95), Vector3(x, 1, z), false)
+		var bot := _create_racer(Color.from_hsv(hue, 0.72, 0.95), Vector3(x, -0.15, z), false)
 		racers.append(bot)
 		bots.append({"node": bot, "phase": randf() * 6.28, "jump_cd": randf_range(1.0, 3.0)})
 
@@ -455,7 +455,7 @@ func _start_round() -> void:
 			continue
 		r.set_meta("finished", false)
 		r.velocity = Vector3.ZERO
-		r.position = Vector3(randf_range(-6.0, 6.0), 1, randf_range(2, 8))
+		r.position = Vector3(randf_range(-6.0, 6.0), -0.15, randf_range(2, 8))
 	if player:
 		player.position = Vector3(0, 1, 3)
 
@@ -512,7 +512,7 @@ func _update_player(delta: float) -> void:
 	player.rotation.z = lerpf(player.rotation.z, -direction.x * 0.16, delta * 8.0)
 	player.position.x = clampf(player.position.x, -7.25, 7.25)
 	if player.position.y < -8:
-		player.position = Vector3(0, 1, maxf(-TRACK_LENGTH + 15, player.position.z + 10))
+		player.position = Vector3(0, -0.15, maxf(-TRACK_LENGTH + 15, player.position.z + 10))
 		player.velocity = Vector3.ZERO
 	_check_player_finish()
 
@@ -535,7 +535,7 @@ func _update_racers(delta: float) -> void:
 		bot.rotation.z = lerpf(bot.rotation.z, -signf(bot.velocity.x) * 0.12, delta * 5.0)
 		bot.position.x = clampf(bot.position.x, -7.2, 7.2)
 		if bot.position.y < -5:
-			bot.position = Vector3(randf_range(-3.5, 3.5), 1, minf(0, bot.position.z + 12))
+			bot.position = Vector3(randf_range(-3.5, 3.5), -0.15, minf(0, bot.position.z + 12))
 			bot.velocity = Vector3.ZERO
 		if bot.position.z <= -TRACK_LENGTH:
 			bot.set_meta("finished", true)
