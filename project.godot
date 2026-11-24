@@ -5,6 +5,7 @@ config/name="SON KALAN KAZANIR"
 run/main_scene="res://Main.tscn"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/description="3D mobil engelli parkur yarisi"
+config/icon="res://icon.svg"
 
 [display]
 window/energy_saving/keep_screen_on=true
