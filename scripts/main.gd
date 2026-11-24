@@ -51,6 +51,8 @@ var dive_button: Button
 var touch_origin := Vector2.ZERO
 var touch_active := false
 var touch_id := -1
+var camera_touch_id := -1
+var hazard_cooldown := 0.0
 
 func _ready() -> void:
 	sfx_player = AudioStreamPlayer.new()
@@ -128,6 +130,7 @@ func _make_obstacles() -> void:
 		pivot.add_to_group("rotors")
 		add_child(pivot)
 		var rotor_body := StaticBody3D.new()
+		rotor_body.add_to_group("hazards")
 		pivot.add_child(rotor_body)
 		var rotor_collision := CollisionShape3D.new()
 		var rotor_shape := BoxShape3D.new()
@@ -152,13 +155,16 @@ func _make_obstacles() -> void:
 		var lane : float = [-5.0, 0.0, 5.0][(i + theme_index) % 3]
 		var height := 1.15 + float((i + theme_index) % 3) * 0.25
 		var block := _make_box("Neon hurdle", Vector3(2.35, height, 1.8), Vector3(lane, height * 0.5, -26.0 - float(i) * 16.0), theme_glow[theme_index].lerp(Color(1.0,0.36,0.18), float(i % 3) * 0.18))
+		block.get_parent().add_to_group("hazards")
 		block.rotation_degrees.y = float(i * 13 + theme_index * 9)
 	for i in range(8):
 		var gap_x : float = [-4.5, 4.5][(i + theme_index) % 2]
-		_make_box("Low jump beam", Vector3(4.2, 0.42, 0.8), Vector3(gap_x, 1.82, -38.0 - float(i) * 23.0), theme_glow[theme_index].lerp(Color.WHITE, 0.18))
+		var beam := _make_box("Low jump beam", Vector3(4.2, 0.42, 0.8), Vector3(gap_x, 1.82, -38.0 - float(i) * 23.0), theme_glow[theme_index].lerp(Color.WHITE, 0.18))
+		beam.get_parent().add_to_group("hazards")
 	for i in range(5):
 		var lane2 : float = [-5.2, 0.0, 5.2][(i * 2 + theme_index) % 3]
-		_make_box("Moving lane block", Vector3(2.8, 0.8, 2.2), Vector3(lane2, 0.4, -52.0 - float(i) * 37.0), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.65))
+		var lane_block := _make_box("Moving lane block", Vector3(2.8, 0.8, 2.2), Vector3(lane2, 0.4, -52.0 - float(i) * 37.0), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.65))
+		lane_block.get_parent().add_to_group("hazards")
 func _make_decor() -> void:
 	for i in range(32):
 		for side in [-1.0, 1.0]:
@@ -456,7 +462,6 @@ func _request_jump() -> void:
 
 func _request_dive() -> void:
 	dive_requested = true
-	_play_sfx(180.0, 0.09, 0.12)
 
 func _start_round() -> void:
 	jump_requested = false
@@ -495,6 +500,7 @@ func _physics_process(delta: float) -> void:
 	if not round_active:
 		return
 	race_time += delta
+	hazard_cooldown = maxf(0.0, hazard_cooldown - delta)
 	_update_player(delta)
 	_update_racers(delta)
 	_update_hud()
@@ -530,6 +536,17 @@ func _update_player(delta: float) -> void:
 	dive_requested = false
 	player.velocity.y -= GRAVITY * delta
 	player.move_and_slide()
+	if hazard_cooldown <= 0.0:
+		for collision_index in range(player.get_slide_collision_count()):
+			var hit := player.get_slide_collision(collision_index)
+			var hit_node := hit.get_collider()
+			if hit_node is Node and hit_node.is_in_group("hazards"):
+				hazard_cooldown = 0.85
+				player.velocity.y = 5.5
+				player.velocity.z = 4.0
+				status_label.text = "ENGELE ÇARPTIN! GERİ DÜŞTÜN"
+				_play_sfx(105.0, 0.16, 0.2)
+				break
 	player.rotation.z = lerpf(player.rotation.z, -direction.x * 0.16, delta * 8.0)
 	player.position.x = clampf(player.position.x, -7.25, 7.25)
 	if player.position.y < -8:
@@ -745,18 +762,21 @@ func _input(event: InputEvent) -> void:
 				touch_origin = event.position
 			elif event.position.x >= size.x * 0.48 and event.position.y > size.y * 0.20 and not (event.position.x > size.x * 0.65 and event.position.y > size.y * 0.72):
 				camera_drag_active = true
+				camera_touch_id = event.index
 				camera_last_touch = event.position
 		else:
 			if event.index == touch_id:
 				touch_active = false
 				touch_id = -1
 				joystick = Vector2.ZERO
-			camera_drag_active = false
+			if event.index == camera_touch_id:
+				camera_drag_active = false
+				camera_touch_id = -1
 	elif event is InputEventScreenDrag:
 		if touch_active and event.index == touch_id:
 			var drag: Vector2 = (event.position - touch_origin) / 85.0
 			joystick = Vector2(clampf(drag.x, -1, 1), clampf(drag.y, -1, 1))
-		elif camera_drag_active:
+		elif camera_drag_active and event.index == camera_touch_id:
 			var motion: Vector2 = event.position - camera_last_touch
 			camera_yaw = clampf(camera_yaw - motion.x * 0.004, -0.75, 0.75)
 			camera_last_touch = event.position
