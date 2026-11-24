@@ -1,0 +1,4 @@
+Durum: İlk oynanabilir temel proje.
+APK: Henüz derlenmedi. GitHub Actions derlemesi bekleniyor.
+Motor: Godot 4.3, GL Compatibility.
+Eksik: Sekiz tam harita, kostüm mağazası, görevler, ses paketi ve gerçek cihaz testi.
