@@ -337,7 +337,7 @@ func _input(event: InputEvent) -> void:
 			touch_active = false
 			joystick = Vector2.ZERO
 	elif event is InputEventScreenDrag and touch_active:
-		var delta := (event.position - touch_origin) / 85.0
+		var delta: Vector2 = (event.position - touch_origin) / 85.0
 		joystick = Vector2(clampf(delta.x, -1, 1), clampf(delta.y, -1, 1))
 
 func _notification(what: int) -> void:
