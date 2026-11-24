@@ -239,15 +239,6 @@ func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody
 		eye.position = Vector3(side * 0.14, 1.79, -0.355)
 		eye.material_override = eye_mat
 		body.add_child(eye)
-	var smile := MeshInstance3D.new()
-	var smile_mesh := SphereMesh.new()
-	smile_mesh.radius = 0.085
-	smile_mesh.height = 0.055
-	smile.mesh = smile_mesh
-	smile.scale = Vector3(1.8, 0.7, 0.35)
-	smile.position = Vector3(0, 1.60, -0.365)
-	smile.material_override = eye_mat
-	body.add_child(smile)
 		var arm := MeshInstance3D.new()
 		var arm_mesh := CapsuleMesh.new()
 		arm_mesh.radius = 0.16
@@ -257,6 +248,15 @@ func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody
 		arm.rotation_degrees.z = side * -12.0
 		arm.material_override = mat
 		body.add_child(arm)
+	var smile := MeshInstance3D.new()
+	var smile_mesh := SphereMesh.new()
+	smile_mesh.radius = 0.085
+	smile_mesh.height = 0.055
+	smile.mesh = smile_mesh
+	smile.scale = Vector3(1.8, 0.7, 0.35)
+	smile.position = Vector3(0, 1.60, -0.365)
+	smile.material_override = eye_mat
+	body.add_child(smile)
 	for side in [-1.0, 1.0]:
 		var leg := MeshInstance3D.new()
 		var leg_mesh := CapsuleMesh.new()
