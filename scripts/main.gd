@@ -180,6 +180,36 @@ func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody
 		arm.rotation_degrees.z = side * -12.0
 		arm.material_override = mat
 		body.add_child(arm)
+	for side in [-1.0, 1.0]:
+		var leg := MeshInstance3D.new()
+		var leg_mesh := CapsuleMesh.new()
+		leg_mesh.radius = 0.19
+		leg_mesh.height = 0.62
+		leg.mesh = leg_mesh
+		leg.position = Vector3(side * 0.23, 0.32, 0.0)
+		leg.material_override = mat
+		body.add_child(leg)
+		var shoe := MeshInstance3D.new()
+		var shoe_mesh := SphereMesh.new()
+		shoe_mesh.radius = 0.23
+		shoe_mesh.height = 0.28
+		shoe.mesh = shoe_mesh
+		shoe.scale = Vector3(1.0, 0.65, 1.35)
+		shoe.position = Vector3(side * 0.23, 0.12, -0.12)
+		var shoe_mat := StandardMaterial3D.new()
+		shoe_mat.albedo_color = Color(0.96, 0.98, 1.0)
+		shoe_mat.metallic = 0.18
+		shoe.material_override = shoe_mat
+		body.add_child(shoe)
+	var crest := MeshInstance3D.new()
+	var crest_mesh := SphereMesh.new()
+	crest_mesh.radius = 0.22
+	crest_mesh.height = 0.25
+	crest.mesh = crest_mesh
+	crest.position = Vector3(0, 2.05, 0.02)
+	crest.scale = Vector3(1.4, 0.55, 1.0)
+	crest.material_override = mat
+	body.add_child(crest)
 	var belt := MeshInstance3D.new()
 	var belt_mesh := BoxMesh.new()
 	belt_mesh.size = Vector3(0.72, 0.16, 0.55)
