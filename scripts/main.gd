@@ -86,6 +86,7 @@ func _build_world() -> void:
 	_make_box("Finish line", Vector3(16, 0.16, 1.6), Vector3(0, 0.12, -TRACK_LENGTH), Color(1.0, 0.82, 0.16))
 	_make_obstacles()
 	_make_decor()
+	_make_theme_landmarks()
 
 func _make_box(label: String, size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var body := StaticBody3D.new()
@@ -158,6 +159,42 @@ func _make_decor() -> void:
 		var arch_z := -float(i) * 12.0 - 8.0
 		_make_box("Side neon marker", Vector3(0.18, 4.2, 0.18), Vector3(-7.55, 1.7, arch_z), theme_glow[theme_index])
 		_make_box("Side neon marker", Vector3(0.18, 4.2, 0.18), Vector3(7.55, 1.7, arch_z), theme_glow[theme_index])
+func _make_theme_landmarks() -> void:
+	for i in range(18):
+		for side in [-1.0, 1.0]:
+			var landmark := MeshInstance3D.new()
+			var material := StandardMaterial3D.new()
+			material.albedo_color = theme_glow[theme_index].lerp(theme_floor[theme_index], 0.28)
+			material.metallic = 0.22
+			material.roughness = 0.34
+			material.emission_enabled = true
+			material.emission = theme_glow[theme_index] * 0.2
+			match theme_index:
+				0, 7:
+					var shape := BoxMesh.new()
+					shape.size = Vector3(1.1, 3.2 + float(i % 3), 1.1)
+					landmark.mesh = shape
+				1, 4, 6:
+					var shape := CylinderMesh.new()
+					shape.top_radius = 0.18 if theme_index == 1 else 0.55
+					shape.bottom_radius = 0.85
+					shape.height = 3.4
+					landmark.mesh = shape
+				2:
+					var shape := CapsuleMesh.new()
+					shape.radius = 0.62
+					shape.height = 3.0
+					landmark.mesh = shape
+				3, 5:
+					var shape := SphereMesh.new()
+					shape.radius = 1.05
+					shape.height = 1.8
+					landmark.mesh = shape
+			landmark.material_override = material
+			landmark.position = Vector3(side * (10.8 + float(i % 2) * 0.8), 1.6, -float(i) * 12.0 - 5.0)
+			landmark.rotation_degrees.y = float(i * 23)
+			add_child(landmark)
+
 func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody3D:
 	var body := CharacterBody3D.new()
 	body.position = pos
@@ -425,6 +462,7 @@ func _update_player(delta: float) -> void:
 	dive_requested = false
 	player.velocity.y -= GRAVITY * delta
 	player.move_and_slide()
+	player.rotation.z = lerpf(player.rotation.z, -direction.x * 0.16, delta * 8.0)
 	player.position.x = clampf(player.position.x, -7.25, 7.25)
 	if player.position.y < -8:
 		player.position = Vector3(0, 1, maxf(-TRACK_LENGTH + 15, player.position.z + 10))
@@ -447,6 +485,7 @@ func _update_racers(delta: float) -> void:
 			data.jump_cd = randf_range(2.2, 4.5)
 		bot.velocity.y -= GRAVITY * delta
 		bot.move_and_slide()
+		bot.rotation.z = lerpf(bot.rotation.z, -signf(bot.velocity.x) * 0.12, delta * 5.0)
 		bot.position.x = clampf(bot.position.x, -7.2, 7.2)
 		if bot.position.y < -5:
 			bot.position = Vector3(randf_range(-3.5, 3.5), 1, minf(0, bot.position.z + 12))
