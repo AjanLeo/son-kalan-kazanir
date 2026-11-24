@@ -1,0 +1,23 @@
+name: Build Android APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.3.0
+    steps:
+      - uses: actions/checkout@v4
+      - name: Export Android debug APK
+        run: |
+          cd SON_KALAN_KAZANIR
+          mkdir -p build
+          godot --headless --editor --path . --quit
+          godot --headless --path . --export-debug Android build/SON_KALAN_KAZANIR.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Son-Kalan-Kazanir-Android-APK
+          path: SON_KALAN_KAZANIR/build/SON_KALAN_KAZANIR.apk
+          if-no-files-found: error
