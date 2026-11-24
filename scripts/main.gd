@@ -65,8 +65,8 @@ func _build_world() -> void:
 	environment.background_mode = Environment.BG_SKY
 	environment.sky = Sky.new()
 	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.12, 0.30, 0.55)
-	sky_mat.sky_horizon_color = Color(0.75, 0.82, 0.92)
+	sky_mat.sky_top_color = theme_floor[theme_index].lerp(Color(0.035, 0.055, 0.14), 0.42)
+	sky_mat.sky_horizon_color = theme_glow[theme_index].lerp(Color(0.72, 0.78, 0.9), 0.72)
 	environment.sky.sky_material = sky_mat
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(0.65, 0.72, 0.85)
@@ -110,38 +110,54 @@ func _make_box(label: String, size: Vector3, pos: Vector3, color: Color) -> Mesh
 	return node
 
 func _make_obstacles() -> void:
-	for i in range(9):
-		var z := -18.0 - float(i) * 22.0
+	for i in range(10):
+		var z := -18.0 - float(i) * 20.0
 		var pivot := Node3D.new()
-		pivot.position = Vector3(0, 1.15, z)
+		pivot.position = Vector3(0, 1.18, z)
+		pivot.add_to_group("rotors")
 		add_child(pivot)
+		var rotor_body := StaticBody3D.new()
+		pivot.add_child(rotor_body)
+		var rotor_collision := CollisionShape3D.new()
+		var rotor_shape := BoxShape3D.new()
+		rotor_shape.size = Vector3(11.0, 0.48, 0.75)
+		rotor_collision.shape = rotor_shape
+		rotor_body.add_child(rotor_collision)
 		var bar := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(11.5, 0.48, 0.75)
+		mesh.size = rotor_shape.size
 		bar.mesh = mesh
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = [Color(1,0.32,0.25), Color(0.95,0.72,0.16), Color(0.25,0.82,0.72)][i % 3]
-		mat.metallic = 0.18
-		mat.roughness = 0.35
+		mat.albedo_color = theme_glow[theme_index]
+		mat.metallic = 0.28
+		mat.roughness = 0.3
+		mat.emission_enabled = true
+		mat.emission = theme_glow[theme_index] * 0.28
 		bar.material_override = mat
-		pivot.add_child(bar)
-		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(-6.0, 0.55, z), Color(0.24,0.30,0.42))
-		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(6.0, 0.55, z), Color(0.24,0.30,0.42))
-	for i in range(7):
-		var lane := [-4.2, 0.0, 4.2][i % 3]
-		var block := _make_box("Neon hurdle", Vector3(2.2, 1.35, 1.7), Vector3(lane, 0.62, -30.0 - float(i) * 27.0), [Color(0.45,0.28,0.92), Color(1.0,0.42,0.18), Color(0.12,0.78,0.9)][i % 3])
-		block.rotation_degrees.y = float(i * 11)
-	for i in range(6):
-		var gap_x := -4.0 if i % 2 == 0 else 4.0
-		_make_box("Low jump beam", Vector3(3.8, 0.45, 0.7), Vector3(gap_x, 1.85, -43.0 - float(i) * 31.0), Color(1.0,0.72,0.18))
-
+		rotor_body.add_child(bar)
+		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(-6.0, 0.55, z), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.35))
+		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(6.0, 0.55, z), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.35))
+	for i in range(12):
+		var lane := [-5.0, 0.0, 5.0][(i + theme_index) % 3]
+		var height := 1.15 + float((i + theme_index) % 3) * 0.25
+		var block := _make_box("Neon hurdle", Vector3(2.35, height, 1.8), Vector3(lane, height * 0.5, -26.0 - float(i) * 16.0), theme_glow[theme_index].lerp(Color(1.0,0.36,0.18), float(i % 3) * 0.18))
+		block.rotation_degrees.y = float(i * 13 + theme_index * 9)
+	for i in range(8):
+		var gap_x := [-4.5, 4.5][(i + theme_index) % 2]
+		_make_box("Low jump beam", Vector3(4.2, 0.42, 0.8), Vector3(gap_x, 1.82, -38.0 - float(i) * 23.0), theme_glow[theme_index].lerp(Color.WHITE, 0.18))
+	for i in range(5):
+		var lane2 := [-5.2, 0.0, 5.2][(i * 2 + theme_index) % 3]
+		_make_box("Moving lane block", Vector3(2.8, 0.8, 2.2), Vector3(lane2, 0.4, -52.0 - float(i) * 37.0), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.65))
 func _make_decor() -> void:
 	for i in range(32):
 		for side in [-1.0, 1.0]:
-			var pillar := _make_box("Arena pillar", Vector3(0.7, 3.0, 0.7), Vector3(side * 10.0, 1.2, -float(i) * 7.0 - 4.0), Color(0.18,0.34,0.52))
+			var pillar := _make_box("Arena pillar", Vector3(0.7, 3.0 + float(i % 3) * 0.5, 0.7), Vector3(side * 10.0, 1.2, -float(i) * 7.0 - 4.0), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.25))
 			pillar.rotation_degrees.y = 45
-			_make_box("Arena light", Vector3(1.0, 0.18, 1.0), Vector3(side * 10.0, 2.85, -float(i) * 7.0 - 4.0), Color(0.12,0.85,1.0))
-
+			_make_box("Arena light", Vector3(1.0, 0.18, 1.0), Vector3(side * 10.0, 2.85, -float(i) * 7.0 - 4.0), theme_glow[theme_index])
+	for i in range(18):
+		var arch_z := -float(i) * 12.0 - 8.0
+		_make_box("Side neon marker", Vector3(0.18, 4.2, 0.18), Vector3(-7.55, 1.7, arch_z), theme_glow[theme_index])
+		_make_box("Side neon marker", Vector3(0.18, 4.2, 0.18), Vector3(7.55, 1.7, arch_z), theme_glow[theme_index])
 func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody3D:
 	var body := CharacterBody3D.new()
 	body.position = pos
