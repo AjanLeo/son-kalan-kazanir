@@ -219,8 +219,21 @@ func _build_hud() -> void:
 	_add_menu_button("AYARLAR", _open_settings)
 	start_button = Button.new()
 	start_button.text = "YARIŞA BAŞLA"
+	start_button.custom_minimum_size = Vector2(260, 58)
+	start_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	start_button.pressed.connect(_start_round)
 	box.add_child(start_button)
+	var touch_hint := _label("SOL: HAREKET   •   SAĞ: KAMERA   •   ZIPLA / DAL", 15)
+	touch_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	top.add_child(touch_hint)
+	joystick_base = _label("◯", 112)
+	joystick_base.position = Vector2(42, 500)
+	joystick_base.modulate = Color(0.55, 0.85, 1.0, 0.62)
+	hud.add_child(joystick_base)
+	joystick_knob = _label("●", 42)
+	joystick_knob.position = Vector2(77, 535)
+	joystick_knob.modulate = Color(1, 1, 1, 0.85)
+	hud.add_child(joystick_knob)
 
 func _label(value: String, size: int) -> Label:
 	var label := Label.new()
@@ -350,7 +363,7 @@ func _open_characters() -> void:
 	result_label.text = "KARAKTERLER\n\n12+ kostüm sistemi hazırlanıyor.\nŞimdilik mavi yarışçı seçili."
 	start_button.text = "GERİ DÖN"
 	start_button.pressed.disconnect(_start_round)
-	start_button.pressed.connect(_back_to_menu, CONNECT_ONE_SHOT)
+	start_button.pressed.connect(_back_to_menu)
 	menu_actions.visible = false
 
 func _open_shop() -> void:
