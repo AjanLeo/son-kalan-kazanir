@@ -357,8 +357,8 @@ func _build_hud() -> void:
 	hud.add_child(dive)
 	dive_button = dive
 	result_panel = PanelContainer.new()
-	result_panel.position = Vector2(300, 145)
-	result_panel.size = Vector2(680, 430)
+	result_panel.position = Vector2(300, 110)
+	result_panel.size = Vector2(680, 500)
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.025, 0.045, 0.09, 0.94)
 	panel_style.border_color = theme_glow[theme_index]
@@ -374,12 +374,12 @@ func _build_hud() -> void:
 	var box := VBoxContainer.new()
 	result_panel.add_child(box)
 	box.add_theme_constant_override("separation", 16)
-	result_label = _label("", 30)
+	result_label = _label("", 24)
 	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(result_label)
 	menu_actions = HBoxContainer.new()
 	menu_actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	menu_actions.add_theme_constant_override("separation", 10)
+	menu_actions.add_theme_constant_override("separation", 8)
 	box.add_child(menu_actions)
 	_add_menu_button("KARAKTER", _open_characters)
 	_add_menu_button("MAĞAZA", _open_shop)
@@ -422,8 +422,8 @@ func _button_style(color: Color) -> StyleBoxFlat:
 func _add_menu_button(caption: String, callback: Callable) -> void:
 	var button := Button.new()
 	button.text = caption
-	button.custom_minimum_size = Vector2(150, 48)
-	button.add_theme_font_size_override("font_size", 17)
+	button.custom_minimum_size = Vector2(112, 48)
+	button.add_theme_font_size_override("font_size", 14)
 	button.add_theme_stylebox_override("normal", _button_style(Color(0.07, 0.18, 0.3)))
 	button.add_theme_stylebox_override("hover", _button_style(theme_glow[theme_index].darkened(0.25)))
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
