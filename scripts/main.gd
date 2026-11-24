@@ -4,6 +4,13 @@ const TRACK_LENGTH := 120.0
 const PLAYER_SPEED := 10.0
 const GRAVITY := 24.0
 var player: CharacterBody3D
+var follow_camera: Camera3D
+var camera_yaw := 0.0
+var camera_drag_active := false
+var camera_last_touch := Vector2.ZERO
+var joystick_base: Label
+var joystick_knob: Label
+var menu_actions: HBoxContainer
 var racers: Array[CharacterBody3D] = []
 var bots: Array[Dictionary] = []
 var round_number := 1
@@ -25,6 +32,7 @@ var result_label: Label
 var start_button: Button
 var touch_origin := Vector2.ZERO
 var touch_active := false
+var touch_id := -1
 
 func _ready() -> void:
 	_load_save()
@@ -34,11 +42,12 @@ func _ready() -> void:
 	_show_intro()
 
 func _build_world() -> void:
-	var camera := Camera3D.new()
-	camera.position = Vector3(0, 7, 13)
-	camera.rotation_degrees = Vector3(-18, 0, 0)
-	camera.current = true
-	add_child(camera)
+	follow_camera = Camera3D.new()
+	follow_camera.position = Vector3(0, 7, 13)
+	follow_camera.rotation_degrees = Vector3(-18, 0, 0)
+	follow_camera.current = true
+	follow_camera.fov = 68.0
+	add_child(follow_camera)
 	var env := WorldEnvironment.new()
 	var environment := Environment.new()
 	environment.background_mode = Environment.BG_SKY
@@ -191,14 +200,23 @@ func _build_hud() -> void:
 	dive.pressed.connect(func(): dive_requested = true)
 	hud.add_child(dive)
 	result_panel = PanelContainer.new()
-	result_panel.position = Vector2(390, 220)
-	result_panel.size = Vector2(500, 230)
+	result_panel.position = Vector2(350, 175)
+	result_panel.size = Vector2(580, 350)
 	result_panel.visible = false
 	hud.add_child(result_panel)
 	var box := VBoxContainer.new()
 	result_panel.add_child(box)
-	result_label = _label("", 28)
+	box.add_theme_constant_override("separation", 16)
+	result_label = _label("", 30)
+	result_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(result_label)
+	menu_actions = HBoxContainer.new()
+	menu_actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	menu_actions.add_theme_constant_override("separation", 10)
+	box.add_child(menu_actions)
+	_add_menu_button("KARAKTER", _open_characters)
+	_add_menu_button("MAĞAZA", _open_shop)
+	_add_menu_button("AYARLAR", _open_settings)
 	start_button = Button.new()
 	start_button.text = "YARIŞA BAŞLA"
 	start_button.pressed.connect(_start_round)
@@ -213,11 +231,13 @@ func _label(value: String, size: int) -> Label:
 
 func _show_intro() -> void:
 	result_panel.visible = true
-	result_label.text = "SON KALAN KAZANIR\n20 yarışmacı, tek şampiyon!"
+	result_label.text = "SON KALAN KAZANIR\n20 YARIŞMACI  •  3 TUR\n\nİlk 10, ardından ilk 5 ve finalde şampiyon!"
 	start_button.text = "YARIŞA BAŞLA"
+	menu_actions.visible = true
 
 func _start_round() -> void:
 	result_panel.visible = false
+	menu_actions.visible = false
 	round_active = true
 	race_time = 0.0
 	for r in racers:
@@ -226,6 +246,15 @@ func _start_round() -> void:
 		r.position = Vector3(randf_range(-4.5, 4.5), 1, randf_range(2, 8))
 	if player:
 		player.position = Vector3(0, 1, 3)
+
+func _process(delta: float) -> void:
+	if player and is_instance_valid(follow_camera):
+		var orbit: Vector3 = Basis(Vector3.UP, camera_yaw) * Vector3(0, 7.0, 12.5)
+		var desired: Vector3 = player.global_position + orbit
+		follow_camera.global_position = follow_camera.global_position.lerp(desired, 1.0 - exp(-5.5 * delta))
+		follow_camera.look_at(player.global_position + Vector3(0, 1.0, -2.0), Vector3.UP)
+	if joystick_knob and joystick_base:
+		joystick_knob.position = joystick_base.position + Vector2(35, 35) + joystick * 31.0
 
 func _physics_process(delta: float) -> void:
 	for obstacle in get_tree().get_nodes_in_group("rotors"):
@@ -314,7 +343,34 @@ func _finish_round(place: int) -> void:
 	round_label.text = "TUR %d / 3" % round_number
 	coin_label.text = "ALTIN: %d" % coins
 	result_panel.visible = true
+	menu_actions.visible = false
 	start_button.text = "YENİDEN OYNA" if round_number == 1 else "SONRAKİ TUR"
+
+func _open_characters() -> void:
+	result_label.text = "KARAKTERLER\n\n12+ kostüm sistemi hazırlanıyor.\nŞimdilik mavi yarışçı seçili."
+	start_button.text = "GERİ DÖN"
+	start_button.pressed.disconnect(_start_round)
+	start_button.pressed.connect(_back_to_menu, CONNECT_ONE_SHOT)
+	menu_actions.visible = false
+
+func _open_shop() -> void:
+	result_label.text = "ALTIN MAĞAZASI\n\nBakiyen: %d ALTIN\nKostüm ve görsel efekt mağazası sıradaki geliştirme aşamasında." % coins
+	start_button.text = "GERİ DÖN"
+	start_button.pressed.disconnect(_start_round)
+	start_button.pressed.connect(_back_to_menu, CONNECT_ONE_SHOT)
+	menu_actions.visible = false
+
+func _open_settings() -> void:
+	result_label.text = "AYARLAR\n\nEKRAN: YATAY 16:9\nKAMERA: SAĞ TARAFTA SÜRÜKLE\nGRAFİK: MOBİL DENGELİ"
+	start_button.text = "GERİ DÖN"
+	start_button.pressed.disconnect(_start_round)
+	start_button.pressed.connect(_back_to_menu, CONNECT_ONE_SHOT)
+	menu_actions.visible = false
+
+func _back_to_menu() -> void:
+	start_button.pressed.disconnect(_back_to_menu)
+	start_button.pressed.connect(_start_round)
+	_show_intro()
 
 func _update_hud() -> void:
 	var alive := 0
@@ -330,15 +386,28 @@ func _update_hud() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		var size := get_viewport().get_visible_rect().size
-		if event.pressed and event.position.x < size.x * 0.48 and event.position.y > size.y * 0.48:
-			touch_active = true
-			touch_origin = event.position
-		elif not event.pressed:
-			touch_active = false
-			joystick = Vector2.ZERO
-	elif event is InputEventScreenDrag and touch_active:
-		var delta: Vector2 = (event.position - touch_origin) / 85.0
-		joystick = Vector2(clampf(delta.x, -1, 1), clampf(delta.y, -1, 1))
+		if event.pressed:
+			if event.position.x < size.x * 0.48 and event.position.y > size.y * 0.48:
+				touch_active = true
+				touch_id = event.index
+				touch_origin = event.position
+			elif event.position.x >= size.x * 0.48 and event.position.y > size.y * 0.20:
+				camera_drag_active = true
+				camera_last_touch = event.position
+		else:
+			if event.index == touch_id:
+				touch_active = false
+				touch_id = -1
+				joystick = Vector2.ZERO
+			camera_drag_active = false
+	elif event is InputEventScreenDrag:
+		if touch_active and event.index == touch_id:
+			var drag: Vector2 = (event.position - touch_origin) / 85.0
+			joystick = Vector2(clampf(drag.x, -1, 1), clampf(drag.y, -1, 1))
+		elif camera_drag_active:
+			var motion: Vector2 = event.position - camera_last_touch
+			camera_yaw = clampf(camera_yaw - motion.x * 0.004, -0.75, 0.75)
+			camera_last_touch = event.position
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
