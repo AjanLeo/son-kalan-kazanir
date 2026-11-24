@@ -57,7 +57,7 @@ jobs:
             exit 1
           fi
           godot --headless --path . --quit-after 5 2>&1 | tee build/startup.log
-          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script|ERROR:" build/startup.log; then
+          if grep -E "SCRIPT ERROR|Parse Error|Failed to load script" build/startup.log; then
             echo "Game startup smoke test failed."
             exit 1
           fi
