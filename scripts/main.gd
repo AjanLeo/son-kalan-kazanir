@@ -43,6 +43,8 @@ var round_label: Label
 var result_panel: PanelContainer
 var result_label: Label
 var start_button: Button
+var jump_button: Button
+var dive_button: Button
 var touch_origin := Vector2.ZERO
 var touch_active := false
 var touch_id := -1
@@ -338,6 +340,7 @@ func _build_hud() -> void:
 	jump.add_theme_stylebox_override("hover", _button_style(Color(0.04, 0.72, 0.92)))
 	jump.pressed.connect(_request_jump)
 	hud.add_child(jump)
+	jump_button = jump
 	var dive := Button.new()
 	dive.text = "DAL"
 	dive.position = Vector2(890, 580)
@@ -345,8 +348,9 @@ func _build_hud() -> void:
 	dive.add_theme_font_size_override("font_size", 21)
 	dive.add_theme_stylebox_override("normal", _button_style(Color(0.58, 0.2, 0.42)))
 	dive.add_theme_stylebox_override("hover", _button_style(Color(0.78, 0.28, 0.55)))
-	dive.pressed.connect(func(): dive_requested = true)
+	dive.pressed.connect(func(): dive_requested = true; _play_sfx(180.0, 0.09, 0.12))
 	hud.add_child(dive)
+	dive_button = dive
 	result_panel = PanelContainer.new()
 	result_panel.position = Vector2(300, 145)
 	result_panel.size = Vector2(680, 430)
@@ -437,6 +441,10 @@ func _show_intro() -> void:
 	if not start_button.pressed.is_connected(_start_round):
 		start_button.pressed.connect(_start_round)
 	menu_actions.visible = true
+	jump_button.visible = false
+	dive_button.visible = false
+	joystick_base.visible = false
+	joystick_knob.visible = false
 func _request_jump() -> void:
 	jump_requested = true
 	_play_sfx(620.0, 0.11, 0.16)
@@ -448,6 +456,10 @@ func _start_round() -> void:
 	joystick = Vector2.ZERO
 	result_panel.visible = false
 	menu_actions.visible = false
+	jump_button.visible = true
+	dive_button.visible = true
+	joystick_base.visible = true
+	joystick_knob.visible = true
 	round_active = true
 	race_time = 0.0
 	for r in racers:
@@ -590,6 +602,10 @@ func _finish_round(place: int) -> void:
 	coin_label.text = "ALTIN: %d" % coins
 	result_panel.visible = true
 	menu_actions.visible = false
+	jump_button.visible = false
+	dive_button.visible = false
+	joystick_base.visible = false
+	joystick_knob.visible = false
 	start_button.text = "YENİDEN OYNA" if round_number == 1 else "SONRAKİ TUR"
 
 func _open_characters() -> void:
