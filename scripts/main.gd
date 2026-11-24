@@ -138,15 +138,15 @@ func _make_obstacles() -> void:
 		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(-6.0, 0.55, z), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.35))
 		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(6.0, 0.55, z), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.35))
 	for i in range(12):
-		var lane := [-5.0, 0.0, 5.0][(i + theme_index) % 3]
+		var lane : float = [-5.0, 0.0, 5.0][(i + theme_index) % 3]
 		var height := 1.15 + float((i + theme_index) % 3) * 0.25
 		var block := _make_box("Neon hurdle", Vector3(2.35, height, 1.8), Vector3(lane, height * 0.5, -26.0 - float(i) * 16.0), theme_glow[theme_index].lerp(Color(1.0,0.36,0.18), float(i % 3) * 0.18))
 		block.rotation_degrees.y = float(i * 13 + theme_index * 9)
 	for i in range(8):
-		var gap_x := [-4.5, 4.5][(i + theme_index) % 2]
+		var gap_x : float = [-4.5, 4.5][(i + theme_index) % 2]
 		_make_box("Low jump beam", Vector3(4.2, 0.42, 0.8), Vector3(gap_x, 1.82, -38.0 - float(i) * 23.0), theme_glow[theme_index].lerp(Color.WHITE, 0.18))
 	for i in range(5):
-		var lane2 := [-5.2, 0.0, 5.2][(i * 2 + theme_index) % 3]
+		var lane2 : float = [-5.2, 0.0, 5.2][(i * 2 + theme_index) % 3]
 		_make_box("Moving lane block", Vector3(2.8, 0.8, 2.2), Vector3(lane2, 0.4, -52.0 - float(i) * 37.0), theme_floor[theme_index].lerp(theme_glow[theme_index], 0.65))
 func _make_decor() -> void:
 	for i in range(32):
