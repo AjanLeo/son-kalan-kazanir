@@ -1,6 +1,6 @@
 extends Node3D
 
-const TRACK_LENGTH := 120.0
+const TRACK_LENGTH := 220.0
 const PLAYER_SPEED := 10.0
 const GRAVITY := 24.0
 var player: CharacterBody3D
@@ -20,6 +20,8 @@ var coins := 0
 var total_wins := 0
 var joystick := Vector2.ZERO
 var jump_requested := false
+var jump_buffer := 0.0
+var coyote_time := 0.0
 var dive_requested := false
 var hud: CanvasLayer
 var status_label: Label
@@ -46,7 +48,7 @@ func _build_world() -> void:
 	follow_camera.position = Vector3(0, 7, 13)
 	follow_camera.rotation_degrees = Vector3(-18, 0, 0)
 	follow_camera.current = true
-	follow_camera.fov = 68.0
+	follow_camera.fov = 72.0
 	add_child(follow_camera)
 	var env := WorldEnvironment.new()
 	var environment := Environment.new()
@@ -66,12 +68,12 @@ func _build_world() -> void:
 	sun.light_energy = 1.25
 	sun.shadow_enabled = true
 	add_child(sun)
-	_make_box("Track", Vector3(12, 0.5, TRACK_LENGTH + 12), Vector3(0, -0.35, -TRACK_LENGTH / 2), Color(0.16, 0.25, 0.36))
-	_make_box("Left rail", Vector3(0.45, 1.3, TRACK_LENGTH + 8), Vector3(-6.1, 0.35, -TRACK_LENGTH / 2), Color(0.08, 0.72, 0.88))
-	_make_box("Right rail", Vector3(0.45, 1.3, TRACK_LENGTH + 8), Vector3(6.1, 0.35, -TRACK_LENGTH / 2), Color(0.95, 0.34, 0.42))
-	for i in range(12):
-		_make_box("Track stripe", Vector3(11.5, 0.035, 0.16), Vector3(0, -0.07, -float(i) * 10.0 - 5.0), Color(0.36, 0.48, 0.62))
-	_make_box("Finish line", Vector3(12, 0.12, 1.2), Vector3(0, 0.12, -TRACK_LENGTH), Color(1.0, 0.82, 0.16))
+	_make_box("Track", Vector3(16, 0.5, TRACK_LENGTH + 12), Vector3(0, -0.35, -TRACK_LENGTH / 2), Color(0.16, 0.25, 0.36))
+	_make_box("Left rail", Vector3(0.5, 1.5, TRACK_LENGTH + 8), Vector3(-8.1, 0.35, -TRACK_LENGTH / 2), Color(0.08, 0.72, 0.88))
+	_make_box("Right rail", Vector3(0.5, 1.5, TRACK_LENGTH + 8), Vector3(8.1, 0.35, -TRACK_LENGTH / 2), Color(0.95, 0.34, 0.42))
+	for i in range(22):
+		_make_box("Track stripe", Vector3(15.5, 0.035, 0.18), Vector3(0, -0.07, -float(i) * 10.0 - 5.0), Color(0.36, 0.48, 0.62))
+	_make_box("Finish line", Vector3(16, 0.16, 1.6), Vector3(0, 0.12, -TRACK_LENGTH), Color(1.0, 0.82, 0.16))
 	_make_obstacles()
 	_make_decor()
 
@@ -98,14 +100,14 @@ func _make_box(label: String, size: Vector3, pos: Vector3, color: Color) -> Mesh
 	return node
 
 func _make_obstacles() -> void:
-	for i in range(5):
-		var z := -18.0 - float(i) * 19.0
+	for i in range(9):
+		var z := -18.0 - float(i) * 22.0
 		var pivot := Node3D.new()
 		pivot.position = Vector3(0, 1.15, z)
 		add_child(pivot)
 		var bar := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(8.5, 0.42, 0.65)
+		mesh.size = Vector3(11.5, 0.48, 0.75)
 		bar.mesh = mesh
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = [Color(1,0.32,0.25), Color(0.95,0.72,0.16), Color(0.25,0.82,0.72)][i % 3]
@@ -113,18 +115,22 @@ func _make_obstacles() -> void:
 		mat.roughness = 0.35
 		bar.material_override = mat
 		pivot.add_child(bar)
-		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(-4.5, 0.55, z), Color(0.24,0.30,0.42))
-		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(4.5, 0.55, z), Color(0.24,0.30,0.42))
-	for i in range(4):
-		var block := _make_box("Jump block", Vector3(2, 1.3, 1.5), Vector3(0, 0.55, -27.0 - float(i) * 24.0), Color(0.45,0.38,0.85))
-		block.rotation_degrees.y = float(i * 17)
+		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(-6.0, 0.55, z), Color(0.24,0.30,0.42))
+		_make_box("Obstacle base", Vector3(1, 1.6, 1), Vector3(6.0, 0.55, z), Color(0.24,0.30,0.42))
+	for i in range(7):
+		var lane := [-4.2, 0.0, 4.2][i % 3]
+		var block := _make_box("Neon hurdle", Vector3(2.2, 1.35, 1.7), Vector3(lane, 0.62, -30.0 - float(i) * 27.0), [Color(0.45,0.28,0.92), Color(1.0,0.42,0.18), Color(0.12,0.78,0.9)][i % 3])
+		block.rotation_degrees.y = float(i * 11)
+	for i in range(6):
+		var gap_x := -4.0 if i % 2 == 0 else 4.0
+		_make_box("Low jump beam", Vector3(3.8, 0.45, 0.7), Vector3(gap_x, 1.85, -43.0 - float(i) * 31.0), Color(1.0,0.72,0.18))
 
 func _make_decor() -> void:
-	for i in range(18):
+	for i in range(32):
 		for side in [-1.0, 1.0]:
-			var pillar := _make_box("Arena pillar", Vector3(0.7, 3.0, 0.7), Vector3(side * 8.0, 1.2, -float(i) * 7.0 - 4.0), Color(0.18,0.34,0.52))
+			var pillar := _make_box("Arena pillar", Vector3(0.7, 3.0, 0.7), Vector3(side * 10.0, 1.2, -float(i) * 7.0 - 4.0), Color(0.18,0.34,0.52))
 			pillar.rotation_degrees.y = 45
-			_make_box("Arena light", Vector3(1.0, 0.18, 1.0), Vector3(side * 8.0, 2.85, -float(i) * 7.0 - 4.0), Color(0.12,0.85,1.0))
+			_make_box("Arena light", Vector3(1.0, 0.18, 1.0), Vector3(side * 10.0, 2.85, -float(i) * 7.0 - 4.0), Color(0.12,0.85,1.0))
 
 func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody3D:
 	var body := CharacterBody3D.new()
@@ -197,7 +203,7 @@ func _build_racers() -> void:
 	player = _create_racer(Color(0.1, 0.85, 1.0), Vector3(0, 1, 3), true)
 	racers.append(player)
 	for i in range(19):
-		var x := -4.5 + float(i % 7) * 1.5
+		var x := -6.0 + float(i % 7) * 2.0
 		var z := 5.0 + float(i / 7) * 2.0
 		var hue := float(i) / 19.0
 		var bot := _create_racer(Color.from_hsv(hue, 0.72, 0.95), Vector3(x, 1, z), false)
@@ -222,7 +228,8 @@ func _build_hud() -> void:
 	jump.text = "ZIPLA"
 	jump.position = Vector2(1060, 560)
 	jump.size = Vector2(170, 72)
-	jump.pressed.connect(func(): jump_requested = true)
+	jump.add_theme_font_size_override("font_size", 24)
+	jump.pressed.connect(_request_jump)
 	hud.add_child(jump)
 	var dive := Button.new()
 	dive.text = "DAL"
@@ -287,6 +294,9 @@ func _show_intro() -> void:
 	start_button.text = "YARIŞA BAŞLA"
 	menu_actions.visible = true
 
+func _request_jump() -> void:
+	jump_requested = true
+
 func _start_round() -> void:
 	result_panel.visible = false
 	menu_actions.visible = false
@@ -301,7 +311,7 @@ func _start_round() -> void:
 
 func _process(delta: float) -> void:
 	if player and is_instance_valid(follow_camera):
-		var orbit: Vector3 = Basis(Vector3.UP, camera_yaw) * Vector3(0, 7.0, 12.5)
+		var orbit: Vector3 = Basis(Vector3.UP, camera_yaw) * Vector3(0, 8.0, 15.5)
 		var desired: Vector3 = player.global_position + orbit
 		follow_camera.global_position = follow_camera.global_position.lerp(desired, 1.0 - exp(-5.5 * delta))
 		follow_camera.look_at(player.global_position + Vector3(0, 1.0, -2.0), Vector3.UP)
@@ -330,15 +340,25 @@ func _update_player(delta: float) -> void:
 	var speed := PLAYER_SPEED
 	player.velocity.x = move_toward(player.velocity.x, direction.x * speed, 24.0 * delta)
 	player.velocity.z = -speed if direction.length() < 0.1 else -speed * maxf(0.35, -direction.y)
-	if player.is_on_floor() and (jump_requested or Input.is_action_just_pressed("ui_accept")):
-		player.velocity.y = 8.0
+	if player.is_on_floor():
+		coyote_time = 0.12
+	else:
+		coyote_time = maxf(0.0, coyote_time - delta)
+	if jump_requested:
+		jump_buffer = 0.18
+	else:
+		jump_buffer = maxf(0.0, jump_buffer - delta)
+	if (jump_buffer > 0.0 and coyote_time > 0.0) or Input.is_action_just_pressed("ui_accept"):
+		player.velocity.y = 10.5
+		jump_buffer = 0.0
+		coyote_time = 0.0
 	if dive_requested:
 		player.velocity.y = -7.0
 	jump_requested = false
 	dive_requested = false
 	player.velocity.y -= GRAVITY * delta
 	player.move_and_slide()
-	player.position.x = clampf(player.position.x, -5.35, 5.35)
+	player.position.x = clampf(player.position.x, -7.25, 7.25)
 	if player.position.y < -8:
 		player.position = Vector3(0, 1, maxf(-TRACK_LENGTH + 15, player.position.z + 10))
 		player.velocity = Vector3.ZERO
@@ -351,7 +371,7 @@ func _update_racers(delta: float) -> void:
 			continue
 		var phase: float = data.phase
 		var speed := PLAYER_SPEED * float(bot.get_meta("speed_factor"))
-		var target_x := sin(race_time * 1.1 + phase) * 3.6
+		var target_x := sin(race_time * 1.1 + phase) * 5.5
 		bot.velocity.x = move_toward(bot.velocity.x, (target_x - bot.position.x) * 1.8, 8.0 * delta)
 		bot.velocity.z = -speed
 		data.jump_cd -= delta
@@ -360,7 +380,7 @@ func _update_racers(delta: float) -> void:
 			data.jump_cd = randf_range(2.2, 4.5)
 		bot.velocity.y -= GRAVITY * delta
 		bot.move_and_slide()
-		bot.position.x = clampf(bot.position.x, -5.3, 5.3)
+		bot.position.x = clampf(bot.position.x, -7.2, 7.2)
 		if bot.position.y < -5:
 			bot.position = Vector3(randf_range(-3.5, 3.5), 1, minf(0, bot.position.z + 12))
 			bot.velocity = Vector3.ZERO
@@ -399,21 +419,21 @@ func _finish_round(place: int) -> void:
 	start_button.text = "YENİDEN OYNA" if round_number == 1 else "SONRAKİ TUR"
 
 func _open_characters() -> void:
-	result_label.text = "KARAKTERLER\n\n12+ kostüm sistemi hazırlanıyor.\nŞimdilik mavi yarışçı seçili."
+	result_label.text = "YARIŞÇI KADROSU\n\n20 farklı renk ve yüz ifadesine sahip yarışçı sahada.\nSenin karakterin: NEON MAVİ\n\nEngelleri aş, rakiplerini geride bırak!")
 	start_button.text = "GERİ DÖN"
 	start_button.pressed.disconnect(_start_round)
 	start_button.pressed.connect(_back_to_menu)
 	menu_actions.visible = false
 
 func _open_shop() -> void:
-	result_label.text = "ALTIN MAĞAZASI\n\nBakiyen: %d ALTIN\nKostüm ve görsel efekt mağazası sıradaki geliştirme aşamasında." % coins
+	result_label.text = "ALTIN\n\nBakiyen: %d ALTIN\n\nBu sürümde altınlar yarış ödülü olarak birikir.\nKostüm satın alma henüz etkin değil." % coins
 	start_button.text = "GERİ DÖN"
 	start_button.pressed.disconnect(_start_round)
 	start_button.pressed.connect(_back_to_menu)
 	menu_actions.visible = false
 
 func _open_settings() -> void:
-	result_label.text = "AYARLAR\n\nEKRAN: YATAY 16:9\nKAMERA: SAĞ TARAFTA SÜRÜKLE\nGRAFİK: MOBİL DENGELİ"
+	result_label.text = "KONTROLLER\n\nSOL ALT: JOYSTICK İLE HAREKET\nSAĞ TARAF: KAMERAYI ÇEVİR\nSAĞ ALT: ZIPLA / DAL\n\nYATAY EKRAN • 3D PARKUR")
 	start_button.text = "GERİ DÖN"
 	start_button.pressed.disconnect(_start_round)
 	start_button.pressed.connect(_back_to_menu)
