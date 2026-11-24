@@ -152,6 +152,37 @@ func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody
 	head.position = Vector3(0, 1.72, -0.02)
 	head.material_override = mat
 	body.add_child(head)
+	# Karakter yüzü ve ayırt edici yarışçı ekipmanları.
+	var eye_mat := StandardMaterial3D.new()
+	eye_mat.albedo_color = Color(0.035, 0.055, 0.09)
+	eye_mat.roughness = 0.25
+	for side in [-1.0, 1.0]:
+		var eye := MeshInstance3D.new()
+		var eye_mesh := SphereMesh.new()
+		eye_mesh.radius = 0.075
+		eye_mesh.height = 0.12
+		eye.mesh = eye_mesh
+		eye.position = Vector3(side * 0.14, 1.79, -0.355)
+		eye.material_override = eye_mat
+		body.add_child(eye)
+		var arm := MeshInstance3D.new()
+		var arm_mesh := CapsuleMesh.new()
+		arm_mesh.radius = 0.16
+		arm_mesh.height = 0.78
+		arm.mesh = arm_mesh
+		arm.position = Vector3(side * 0.53, 0.91, 0.0)
+		arm.rotation_degrees.z = side * -12.0
+		arm.material_override = mat
+		body.add_child(arm)
+	var belt := MeshInstance3D.new()
+	var belt_mesh := BoxMesh.new()
+	belt_mesh.size = Vector3(0.72, 0.16, 0.55)
+	belt.mesh = belt_mesh
+	belt.position = Vector3(0, 0.55, 0)
+	var belt_mat := StandardMaterial3D.new()
+	belt_mat.albedo_color = Color(0.055, 0.075, 0.12)
+	belt.material_override = belt_mat
+	body.add_child(belt)
 	var collision := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
 	shape.radius = 0.48
