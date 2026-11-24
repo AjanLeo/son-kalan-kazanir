@@ -237,6 +237,15 @@ func _create_racer(color: Color, pos: Vector3, is_player: bool) -> CharacterBody
 		eye.position = Vector3(side * 0.14, 1.79, -0.355)
 		eye.material_override = eye_mat
 		body.add_child(eye)
+	var smile := MeshInstance3D.new()
+	var smile_mesh := SphereMesh.new()
+	smile_mesh.radius = 0.085
+	smile_mesh.height = 0.055
+	smile.mesh = smile_mesh
+	smile.scale = Vector3(1.8, 0.7, 0.35)
+	smile.position = Vector3(0, 1.60, -0.365)
+	smile.material_override = eye_mat
+	body.add_child(smile)
 		var arm := MeshInstance3D.new()
 		var arm_mesh := CapsuleMesh.new()
 		arm_mesh.radius = 0.16
@@ -325,17 +334,32 @@ func _build_hud() -> void:
 	jump.position = Vector2(1060, 560)
 	jump.size = Vector2(170, 72)
 	jump.add_theme_font_size_override("font_size", 24)
+	jump.add_theme_stylebox_override("normal", _button_style(Color(0.02, 0.55, 0.78)))
+	jump.add_theme_stylebox_override("hover", _button_style(Color(0.04, 0.72, 0.92)))
 	jump.pressed.connect(_request_jump)
 	hud.add_child(jump)
 	var dive := Button.new()
 	dive.text = "DAL"
 	dive.position = Vector2(890, 580)
 	dive.size = Vector2(140, 60)
+	dive.add_theme_font_size_override("font_size", 21)
+	dive.add_theme_stylebox_override("normal", _button_style(Color(0.58, 0.2, 0.42)))
+	dive.add_theme_stylebox_override("hover", _button_style(Color(0.78, 0.28, 0.55)))
 	dive.pressed.connect(func(): dive_requested = true)
 	hud.add_child(dive)
 	result_panel = PanelContainer.new()
-	result_panel.position = Vector2(350, 175)
-	result_panel.size = Vector2(580, 350)
+	result_panel.position = Vector2(300, 145)
+	result_panel.size = Vector2(680, 430)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.025, 0.045, 0.09, 0.94)
+	panel_style.border_color = theme_glow[theme_index]
+	panel_style.set_border_width_all(3)
+	panel_style.set_corner_radius_all(22)
+	panel_style.content_margin_left = 24
+	panel_style.content_margin_right = 24
+	panel_style.content_margin_top = 22
+	panel_style.content_margin_bottom = 22
+	result_panel.add_theme_stylebox_override("panel", panel_style)
 	result_panel.visible = false
 	hud.add_child(result_panel)
 	var box := VBoxContainer.new()
@@ -371,10 +395,25 @@ func _build_hud() -> void:
 	joystick_knob.modulate = Color(1, 1, 1, 0.85)
 	hud.add_child(joystick_knob)
 
+func _button_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.border_color = color.lerp(Color.WHITE, 0.35)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(12)
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	return style
+
 func _add_menu_button(caption: String, callback: Callable) -> void:
 	var button := Button.new()
 	button.text = caption
 	button.custom_minimum_size = Vector2(150, 48)
+	button.add_theme_font_size_override("font_size", 17)
+	button.add_theme_stylebox_override("normal", _button_style(Color(0.07, 0.18, 0.3)))
+	button.add_theme_stylebox_override("hover", _button_style(theme_glow[theme_index].darkened(0.25)))
 	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	button.pressed.connect(callback)
 	menu_actions.add_child(button)
