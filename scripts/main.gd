@@ -359,6 +359,10 @@ func _request_jump() -> void:
 	jump_requested = true
 
 func _start_round() -> void:
+	jump_requested = false
+	jump_buffer = 0.0
+	coyote_time = 0.0
+	joystick = Vector2.ZERO
 	result_panel.visible = false
 	menu_actions.visible = false
 	round_active = true
@@ -484,6 +488,8 @@ func _finish_round(place: int) -> void:
 		coins += 100 if round_number == 3 else 35
 		if round_number == 3:
 			total_wins += 1
+			for data in bots:
+				(data.node as CharacterBody3D).visible = true
 		result_label.text = "ŞAMPİYON OLDUN!\nSıralama: %d\n+%d ALTIN" % [place, 100 if round_number == 3 else 35]
 		round_number = 1 if round_number == 3 else round_number + 1
 	else:
@@ -516,6 +522,9 @@ func _next_skin() -> void:
 	_open_characters()
 
 func _show_submenu(message: String) -> void:
+	for child in menu_actions.get_children():
+		menu_actions.remove_child(child)
+		child.queue_free()
 	result_label.text = message
 	start_button.text = "GERİ DÖN"
 	if start_button.pressed.is_connected(_start_round):
@@ -597,7 +606,7 @@ func _update_hud() -> void:
 	progress_label.text = "İLERLEME %d%%" % int(clampf((-player.position.z / TRACK_LENGTH) * 100.0, 0, 100))
 	coin_label.text = "ALTIN: %d" % coins
 	round_label.text = "TUR %d / 3" % round_number
-	status_label.text = "SIRALAMAN: %d / 20" % _player_rank()
+	status_label.text = "SIRALAMAN: %d / %d" % [_player_rank(), racers.count(func(r: CharacterBody3D) -> bool: return r.visible)]
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
