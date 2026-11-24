@@ -28,7 +28,7 @@ var theme_index := 0
 var skin_index := 0
 var unlocked_skins: Array[int] = [0]
 var quest_claimed := false
-var skin_colors: Array[Color] = [Color(0.1,0.85,1.0), Color(1.0,0.25,0.42), Color(0.45,0.95,0.35), Color(1.0,0.72,0.15), Color(0.65,0.42,1.0), Color(1.0,0.45,0.12), Color(0.95,0.95,1.0), Color(0.12,0.95,0.75)]
+var skin_colors: Array[Color] = [Color(0.1,0.85,1.0), Color(1.0,0.25,0.42), Color(0.45,0.95,0.35), Color(1.0,0.72,0.15), Color(0.65,0.42,1.0), Color(1.0,0.45,0.12), Color(0.95,0.95,1.0), Color(0.12,0.95,0.75), Color(0.95,0.18,0.68), Color(0.48,0.25,0.12), Color(0.82,0.88,0.18), Color(0.28,0.38,0.95)]
 var theme_names: Array[String] = ["NEON ŞEHİR", "LAV DENİZİ", "BUZ KRALLIĞI", "GÖKYÜZÜ", "ŞEKER DÜNYASI", "UZAY ÜSSÜ", "ORMAN TAPINAĞI", "ŞAMPİYON ARENASI"]
 var theme_floor: Array[Color] = [Color(0.12,0.19,0.31), Color(0.32,0.09,0.07), Color(0.55,0.78,0.91), Color(0.25,0.42,0.68), Color(0.75,0.35,0.58), Color(0.10,0.12,0.25), Color(0.12,0.28,0.19), Color(0.28,0.19,0.42)]
 var theme_glow: Array[Color] = [Color(0.05,0.9,1.0), Color(1.0,0.22,0.05), Color(0.6,0.92,1.0), Color(1.0,0.85,0.35), Color(1.0,0.35,0.72), Color(0.48,0.38,1.0), Color(0.3,1.0,0.52), Color(1.0,0.78,0.18)]
@@ -619,7 +619,7 @@ func _finish_round(place: int) -> void:
 
 func _open_characters() -> void:
 	var state := "AÇIK" if unlocked_skins.has(skin_index) else "KİLİTLİ"
-	_show_submenu("KARAKTER SEÇİMİ\n\nKostüm %d / 8\nDurum: %s\n\nAçık kostümler arasında seçim yap." % [skin_index + 1, state])
+	_show_submenu("KARAKTER SEÇİMİ\n\nKostüm %d / 12\nDurum: %s\n\nAçık kostümler arasında seçim yap." % [skin_index + 1, state])
 	_add_submenu_action("SONRAKİ KARAKTER", _next_skin)
 
 func _next_skin() -> void:
@@ -799,13 +799,13 @@ func _load_save() -> void:
 			total_races = int(parsed.get("races", 0))
 			best_rank = int(parsed.get("best_rank", 20))
 			theme_index = clampi(int(parsed.get("theme", 0)), 0, 7)
-			skin_index = clampi(int(parsed.get("skin", 0)), 0, 7)
+			skin_index = clampi(int(parsed.get("skin", 0)), 0, 11)
 			var saved_unlocked = parsed.get("unlocked", [0])
 			if saved_unlocked is Array:
 				unlocked_skins.clear()
 				for item in saved_unlocked:
 					var idx := int(item)
-					if idx >= 0 and idx < 8 and not unlocked_skins.has(idx): unlocked_skins.append(idx)
+					if idx >= 0 and idx < 12 and not unlocked_skins.has(idx): unlocked_skins.append(idx)
 			if not unlocked_skins.has(0): unlocked_skins.append(0)
 			quest_claimed = bool(parsed.get("quest_claimed", false))
 			graphics_level = clampi(int(parsed.get("graphics", 2)), 0, 2)
